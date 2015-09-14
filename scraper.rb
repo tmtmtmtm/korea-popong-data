@@ -15,22 +15,44 @@ def json_from(url)
   JSON.parse(open(url).read, symbolize_names: true)
 end
 
-@POPONG_API = 'http://api.popong.com/v0.1/person/%s?api_key=test'
+@POPONG_API = 'http://api.popong.com/v0.1/person/search?q=%s&api_key=test'
 
-file = 'https://raw.githubusercontent.com/teampopong/data-for-rnd/master/assembly.csv'
+def find_popong(row)
+  search = json_from(@POPONG_API % URI::encode(row[:name_kr])) 
+  return {} if search[:items].count.zero?
+  return search[:items].first if search[:items].count == 1
+
+  if (addressed = search[:items].find_all { |i| i[:address] }).size == 1
+    # warn "Found by address".cyan
+    return addressed.first
+  end
+
+  first_unique = ->(json_sym, csv_sym) { 
+    filtered = search[:items].find_all { |s| s[json_sym] = row[csv_sym] }
+    return filtered.first if filtered.size == 1
+  }
+
+  return first_unique.(:name_en, :name_en) || first_unique.(:name_cn, :name_cn) || first_unique.(:birthday, :birth) 
+  # || search[:items].sort_by { |i| i.reject { |k,v| v.to_s.empty? }.keys.count }.last
+end
+
+
+file = 'https://raw.githubusercontent.com/teampopong/data-assembly/master/assembly.csv'
 raw = open(file).read
 
 csv = CSV.parse(raw, headers: true, header_converters: :symbol)
 csv.each do |row|
-  json = json_from(@POPONG_API % row[:person_id]) rescue {}
-  warn "%s vs %s".red % [row[:name_en], json[:name_en]] unless row[:name_en] == json[:name_en]
+  json = find_popong(row) || begin
+    warn "No match for #{row[:name_en]}".red
+    {}
+  end
 
   data = { 
-    id: row[:person_id],
-    identifier__popong: row[:person_id],
+    id: json[:id] || row[:name_en].downcase.tr(' ','-'),
+    identifier__popong: json[:id],
     name: row[:name_en].strip,
-    name__ko: row[:name],
-    name__cn: row[:name__cn],
+    name__ko: row[:name_kr],
+    name__cn: row[:name_cn],
     birth_date: row[:birth],
     party: row[:party],
     area: row[:district],
@@ -46,9 +68,7 @@ csv.each do |row|
     facebook: json[:facebook],
   }
 
-
-  # puts data
-  ScraperWiki.save_sqlite([:id, :term], data)
+  ScraperWiki.save_sqlite([:id, :name, :term], data)
 end
 
 
