@@ -59,7 +59,7 @@ csv.each do |row|
     phone: row[:off_phone],
     homepage: row[:homepage],
     email: row[:email],
-    photo: 'http://www.assembly.go.kr/photo/%s.jpg)' % row[:photo_id],
+    photo: row[:photo],
     term: 19,
     source: "github.com/teampopong/data-for-rnd",
 
