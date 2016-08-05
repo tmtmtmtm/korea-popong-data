@@ -60,7 +60,7 @@ csv.each do |row|
     homepage: row[:homepage],
     email: row[:email],
     photo: row[:photo],
-    term: 19,
+    term: 20,
     source: "github.com/teampopong/data-for-rnd",
 
     wikipedia: json[:wiki],
