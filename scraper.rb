@@ -7,9 +7,10 @@ require 'json'
 require 'open-uri'
 require 'pry'
 require 'scraperwiki'
+require 'scraped_page_archive/open-uri'
 
-require 'open-uri/cached'
-OpenURI::Cache.cache_path = '.cache'
+# require 'open-uri/cached'
+# OpenURI::Cache.cache_path = '.cache'
 
 def json_from(url)
   JSON.parse(open(url).read, symbolize_names: true)
@@ -18,7 +19,7 @@ end
 @POPONG_API = 'http://api.popong.com/v0.1/person/search?q=%s&api_key=test'
 
 def find_popong(row)
-  search = json_from(@POPONG_API % URI::encode(row[:name_kr])) 
+  search = json_from(@POPONG_API % URI::encode(row[:name_kr]))
   return {} if search[:items].count.zero?
   return search[:items].first if search[:items].count == 1
 
@@ -27,12 +28,12 @@ def find_popong(row)
     return addressed.first
   end
 
-  first_unique = ->(json_sym, csv_sym) { 
+  first_unique = ->(json_sym, csv_sym) {
     filtered = search[:items].find_all { |s| s[json_sym] = row[csv_sym] }
     return filtered.first if filtered.size == 1
   }
 
-  return first_unique.(:name_en, :name_en) || first_unique.(:name_cn, :name_cn) || first_unique.(:birthday, :birth) 
+  return first_unique.(:name_en, :name_en) || first_unique.(:name_cn, :name_cn) || first_unique.(:birthday, :birth)
   # || search[:items].sort_by { |i| i.reject { |k,v| v.to_s.empty? }.keys.count }.last
 end
 
@@ -47,7 +48,7 @@ csv.each do |row|
     {}
   end
 
-  data = { 
+  data = {
     id: json[:id] || row[:name_en].downcase.tr(' ','-'),
     identifier__popong: json[:id],
     name: row[:name_en].strip,
@@ -70,5 +71,3 @@ csv.each do |row|
 
   ScraperWiki.save_sqlite([:id, :name, :term], data)
 end
-
-
