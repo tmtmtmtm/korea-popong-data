@@ -1,9 +1,7 @@
 #!/bin/env ruby
 # encoding: utf-8
 
-require 'colorize'
 require 'csv'
-require 'json'
 require 'open-uri'
 require 'pry'
 require 'scraperwiki'
