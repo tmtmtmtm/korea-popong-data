@@ -13,6 +13,7 @@ OpenURI::Cache.cache_path = '.cache'
 file = 'https://raw.githubusercontent.com/teampopong/data-assembly/master/assembly.csv'
 raw = open(file).read
 
+ScraperWiki.sqliteexecute('DELETE FROM data') rescue nil
 csv = CSV.parse(raw, headers: true, header_converters: :symbol)
 csv.each do |row|
   data = {
